@@ -1,4 +1,3 @@
-import Image from "next/image";
 import ExcelPDF from "./ExcelPDF";
 
 export default function Home() {

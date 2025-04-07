@@ -26,7 +26,7 @@ function ExcelPDF() {
   const [workbook, setWorkbook] = useState(null);
 
   // Define the mappings for the event paths
-  const eventMappings = {
+  const eventMappings:any = {
     "/event/billing/product/fee/purchase": "Ativação de plano",
     "/event/delayed/session/telco/gprs": "Serviço de Dados e internet",
     "/event/delayed/session/telco/gsm": "Serviço de Voz",
@@ -36,10 +36,10 @@ function ExcelPDF() {
   const calculateDateRange = (rows:any) => {
     if (!rows || rows.length === 0) return { min: "N/A", max: "N/A" };
 
-    let minDate = null;
-    let maxDate = null;
+    let minDate: number | Date | null = null;
+    let maxDate: number | Date | null = null;
 
-    rows.forEach(row => {
+    rows.forEach((row:any) => {
       // Parse start time
       if (row.start_time && row.start_time !== "N/A" && row.amount != 0) {
         try {
@@ -51,6 +51,7 @@ function ExcelPDF() {
           }
         } catch (e) {
           // Skip invalid dates
+          console.log(e);
         }
       }
 
@@ -65,14 +66,16 @@ function ExcelPDF() {
               maxDate = endDate;
             }
           }
-        } catch (e) {
+        } catch (e:any) {
           // Skip invalid dates
+          console.log(e);
+          
         }
       }
     });
 
     // Format dates as DD/MM/YYYY
-    const formatDate = (date) => {
+    const formatDate = (date:any) => {
       if (!date) return "N/A";
       return `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
     };
@@ -96,8 +99,8 @@ function ExcelPDF() {
         const reader = new FileReader();
         reader.onload = (e) => {
           try {
-            const ab = e.target.result;
-            const wb = XLSX.read(ab, { type: "array" });
+            const ab = e?.target?.result;
+            const wb:any = XLSX.read(ab, { type: "array" });
             setWorkbook(wb);
 
             // Get all sheet names and set them in state
@@ -112,18 +115,18 @@ function ExcelPDF() {
               // If there are multiple sheets, let the user select
               setSelectedSheet(sheetNames[0]); // Default to first sheet
             }
-          } catch (err) {
+          } catch (err:any) {
             setError("Error processing Excel file: " + err.message);
             console.error("Error processing Excel file:", err);
           }
         };
-        reader.onerror = (err) => {
-          setError("Error reading file: " + err.message);
+        reader.onerror = (err:any) => {
+          setError("Error reading file: " + err?.message);
           console.error("File reading error:", err);
         };
         reader.readAsArrayBuffer(file);
-      } catch (err) {
-        setError("Error handling file: " + err.message);
+      } catch (err:any) {
+        setError("Error handling file: " + err?.message);
         console.error("File handling error:", err);
       }
     }
@@ -138,15 +141,15 @@ function ExcelPDF() {
       const data = XLSX.utils.sheet_to_json(sheet, { header: 1 }); // Convert sheet to JSON array
 
       // Map the event paths in the data
-      const updatedData = data.map((row) => {
-        return row.map((cell) => {
+      const updatedData = data.map((row:any) => {
+        return row.map((cell:any) => {
           // Check if the cell contains an event path and replace it
           return eventMappings[cell] || cell; // Replace event path if exists, otherwise keep the cell value
         });
       });
 
       setExcelData(updatedData); // Set the parsed and updated data to state
-    } catch (err) {
+    } catch (err:any) {
       setError("Error processing sheet: " + err.message);
       console.error("Sheet processing error:", err);
     }
@@ -162,7 +165,6 @@ function ExcelPDF() {
   // Function to convert units based on service type
   const convertUnits = (amount:any, serviceType:any) => {
     let value = parseFloat(amount) || 0;
-    let unit = "";
     let display = "";
 
     switch (serviceType) {
@@ -211,31 +213,31 @@ function ExcelPDF() {
     // Find column indexes for the required fields
     const headers = excelData[0];
     const startTimeIndex = headers.findIndex(
-      (h) =>
+      (h:any) =>
         h &&
         h.toString().toLowerCase().includes("start") &&
         h.toString().toLowerCase().includes("time")
     );
     const endTimeIndex = headers.findIndex(
-      (h) =>
+      (h:any) =>
         h &&
         h.toString().toLowerCase().includes("end") &&
         h.toString().toLowerCase().includes("time")
     );
     const usageTypeIndex = headers.findIndex(
-      (h) =>
+      (h:any) =>
         h &&
         (h.toString().toLowerCase().includes("usage") ||
           h.toString().toLowerCase().includes("type"))
     );
     const amountIndex = headers.findIndex(
-      (h) => h && h.toString().toLowerCase().includes("amount")
+      (h:any) => h && h.toString().toLowerCase().includes("amount")
     );
 
     // Extract only the rows with the required fields and non-zero amounts
     const extractedRows = excelData
       .slice(1)
-      .map((row) => {
+      .map((row:any) => {
         const rawAmount =
           amountIndex >= 0 && row[amountIndex] ? row[amountIndex] : 0;
         const usageType =
@@ -250,20 +252,20 @@ function ExcelPDF() {
           start_time:
             startTimeIndex >= 0 && row[startTimeIndex]
               ? formatDateTime(row[startTimeIndex])
-              : "N/A",
+              : "DD/MM/AAAA",
           end_time:
             endTimeIndex >= 0 && row[endTimeIndex]
               ? formatDateTime(row[endTimeIndex])
-              : "N/A",
+              : "DD/MM/AAAA",
           usage_type: usageType,
           raw_amount: parseFloat(rawAmount) || 0,
           display_amount: convertedAmount.display,
         };
       })
-      .filter((row) => row.raw_amount > 0); // Filter out rows with zero amount
+      .filter((row:any) => row.raw_amount > 0); // Filter out rows with zero amount
 
     // Group by usage type for summary
-    const groupedByType = extractedRows.reduce((acc, row) => {
+    const groupedByType = extractedRows.reduce((acc:any, row:any) => {
       if (!acc[row.usage_type]) {
         acc[row.usage_type] = {
           total: 0,
@@ -295,7 +297,7 @@ function ExcelPDF() {
 
   // Helper function to format date/time strings for better display
   const formatDateTime = (dateTimeString:any) => {
-    if (!dateTimeString) return "N/A";
+    if (!dateTimeString) return "DD/MM/AAAA";
 
     // Try to format the date string to make it more readable and shorter
     try {
@@ -312,6 +314,7 @@ function ExcelPDF() {
       }
     } catch (e) {
       // If parsing fails, return the original string
+      console.log(e);
     }
 
     return String(dateTimeString);
@@ -367,13 +370,13 @@ function ExcelPDF() {
       doc.setTextColor(44, 62, 80);
       doc.setFontSize(14);
       doc.text(
-        `Client Nº: ${documentNumber || "N/A"}`,
+        `Nº do Cliente: ${documentNumber || "N/A"}`,
         pageWidth - margin,
         15,
         { align: "right" }
       );
       doc.setFontSize(12);
-      doc.text(`Client Name: ${userName || "N/A"}`, pageWidth - margin, 25, {
+      doc.text(`Cliente: ${userName || "N/A"}`, pageWidth - margin, 25, {
         align: "right",
       });
       // doc.setFontSize(12);
@@ -384,7 +387,7 @@ function ExcelPDF() {
       // Add title
       doc.setFontSize(16);
       doc.setTextColor(44, 62, 80);
-      doc.text("Usage Statement", pageWidth / 2, 35, { align: "center" });
+      doc.text("Relatório de Consumo", pageWidth / 2, 35, { align: "center" });
 
       // Add sheet name and timestamp
       doc.setFontSize(10);
@@ -394,7 +397,7 @@ function ExcelPDF() {
 
       // doc.text(`Sheet: ${selectedSheet}`, margin, 45);
       doc.text(`${dateRange.min} - ${dateRange.max}`,  margin, 45);
-      doc.text(`Generated on: ${date}`, pageWidth - margin, 45, {
+      doc.text(`Gerado em: ${date}`, pageWidth - margin, 45, {
         align: "right",
       });
 
@@ -406,9 +409,9 @@ function ExcelPDF() {
       doc.rect(margin, yPos, usableWidth, 10, "F");
 
       doc.setTextColor(255, 255, 255);
-      doc.setFontSize(12);
+      doc.setFontSize(9);
       doc.setFont("helvetica", "bold");
-      doc.text("Usage Summary by Type", margin + 5, yPos + 7);
+      doc.text("Resumo de Consumo", margin + 5, yPos + 7);
 
       yPos += 10;
 
@@ -428,7 +431,7 @@ function ExcelPDF() {
 
         // Draw text
         doc.setTextColor(44, 62, 80);
-        doc.setFontSize(11);
+        doc.setFontSize(9);
         doc.setFont("helvetica", "bold");
         doc.text(summary.usage_type + ":", margin + 5, yPos + 7);
         doc.setFont("helvetica", "normal");
@@ -456,20 +459,20 @@ function ExcelPDF() {
 
       // Draw header text
       doc.setTextColor(255, 255, 255);
-      doc.setFontSize(10);
+      doc.setFontSize(8);
       doc.setFont("helvetica", "bold");
 
       let xPos = margin;
-      doc.text("Start Time", xPos + 2, yPos + 7);
+      doc.text("Data de Início", xPos + 2, yPos + 7);
       xPos += colWidths[0];
 
-      doc.text("End Time", xPos + 2, yPos + 7);
+      doc.text("Data Final", xPos + 2, yPos + 7);
       xPos += colWidths[1];
 
-      doc.text("Usage Type", xPos + 2, yPos + 7);
+      doc.text("Tipo de Consumo", xPos + 2, yPos + 7);
       xPos += colWidths[2];
 
-      doc.text("Consumption", xPos + 2, yPos + 7);
+      doc.text("Consumo", xPos + 2, yPos + 7);
 
       yPos += 10; // Move to first data row
 
@@ -493,16 +496,16 @@ function ExcelPDF() {
           doc.setFont("helvetica", "bold");
 
           xPos = margin;
-          doc.text("Start Time", xPos + 2, yPos + 7);
+          doc.text("Data de Início", xPos + 2, yPos + 7);
           xPos += colWidths[0];
 
-          doc.text("End Time", xPos + 2, yPos + 7);
+          doc.text("Data Final", xPos + 2, yPos + 7);
           xPos += colWidths[1];
 
-          doc.text("Usage Type", xPos + 2, yPos + 7);
+          doc.text("Tipo de Consumo", xPos + 2, yPos + 7);
           xPos += colWidths[2];
 
-          doc.text("Consumption", xPos + 2, yPos + 7);
+          doc.text("Consumo", xPos + 2, yPos + 7);
 
           yPos += 10;
           doc.setFont("helvetica", "normal");
@@ -584,13 +587,13 @@ function ExcelPDF() {
   };
 
   const { rows, typeSummaries } = extractRequiredData()
-  const dateRange = rows.length > 0 ? calculateDateRange(rows) : { min: "N/A", max: "N/A" }
+  const dateRange = rows.length > 0 ? calculateDateRange(rows) : { min: "DD/MM/AAAA", max: "DD/MM/AAAA" }
 
 
   return (
     <div className="container mx-auto py-6 px-4 max-w-6xl">
     <h1 className="text-2xl font-bold text-slate-800 pb-4 border-b border-slate-200 mb-4">
-      Excel to PDF Statement Generator
+        Gerador de Relatório de Consumo dos Clientes
     </h1>
 
     {error && (
@@ -601,15 +604,15 @@ function ExcelPDF() {
       </Alert>
     )}
 
-    <Card className="mb-8">
+    <Card className="mb-8 shadow-none">
       <CardHeader>
-        <CardTitle>Document Information</CardTitle>
-        <CardDescription>Enter the details for your statement</CardDescription>
+        <CardTitle>Informação do Documento</CardTitle>
+        <CardDescription>Insira os detalhes do relatorio</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
-            <Label htmlFor="userName">Client Name</Label>
+            <Label htmlFor="userName">Nome do Cliente</Label>
             <Input
               id="userName"
               value={userName}
@@ -618,7 +621,7 @@ function ExcelPDF() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="documentNumber">Client Number</Label>
+            <Label htmlFor="documentNumber">Numero do Cliente</Label>
             <Input
               id="documentNumber"
               value={documentNumber}
@@ -629,12 +632,12 @@ function ExcelPDF() {
         </div>
 
         <div className="pt-2 border-t border-slate-100">
-          <h3 className="text-md font-medium mb-2">Statement Period</h3>
+          <h3 className="text-md font-medium mb-2">Período de Consumo</h3>
           <p className="text-sm text-slate-600">{`${dateRange.min} - ${dateRange.max}`}</p>
         </div>
 
         <div className="space-y-2 pt-2">
-          <Label htmlFor="fileUpload">Upload Excel File</Label>
+          <Label htmlFor="fileUpload">Upload do ficheiro Excel</Label>
           <div className="flex items-center gap-2">
             <Input id="fileUpload" type="file" accept=".xlsx, .xls" onChange={handleFileUpload} className="flex-1" />
             <Button variant="outline" size="icon" onClick={() => document.getElementById("fileUpload")?.click()}>
@@ -662,7 +665,7 @@ function ExcelPDF() {
         )}
 
         <Button onClick={generatePDF} disabled={!excelData} variant="outline" className="w-full md:w-auto bg-white">
-          Generate Statement PDF
+          Gerar o Relatio PDF
         </Button>
       </CardContent>
     </Card>
@@ -670,13 +673,13 @@ function ExcelPDF() {
     {excelData && (
       <div className="space-y-8">
         <div className="pb-8">
-          <h3 className="text-xl font-semibold text-slate-800 pb-3 border-b border-slate-200 mb-4">Usage Summary</h3>
+          <h3 className="text-xl font-semibold text-slate-800 pb-3 border-b border-slate-200 mb-4">Resumo de Consumo</h3>
           <div className="rounded-md border overflow-hidden max-w-md">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Usage Type</TableHead>
-                  <TableHead>Total Consumption</TableHead>
+                  <TableHead>Tipo de Consumo</TableHead>
+                  <TableHead>Consumo Total</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -692,22 +695,22 @@ function ExcelPDF() {
         </div>
         <div className="pb-8">
           <h3 className="text-xl font-semibold text-slate-800 pb-3 border-b border-slate-200 mb-4">
-            Data Preview with Unit Conversions
+          Pré-visualização de Dados com Conversões de Unidade
           </h3>
           <div className="rounded-md border overflow-hidden">
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Start Time</TableHead>
-                    <TableHead>End Time</TableHead>
-                    <TableHead>Usage Type</TableHead>
-                    <TableHead>Raw Amount</TableHead>
-                    <TableHead>Converted Amount</TableHead>
+                    <TableHead>Data de Início</TableHead>
+                    <TableHead>Data Final</TableHead>
+                    <TableHead>Tipo de Consumo</TableHead>
+                    <TableHead>Quantidade Bruta</TableHead>
+                    <TableHead>Quantidade Convertida</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {rows.map((row, index) => (
+                  {rows.map((row:any, index:any) => (
                     <TableRow key={index}>
                       <TableCell>{row.start_time}</TableCell>
                       <TableCell>{row.end_time}</TableCell>
