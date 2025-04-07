@@ -398,8 +398,49 @@ function ExcelPDF() {
         align: "right",
       });
 
-      // Set starting Y position for table
+      // Add summary section
       let yPos = 55;
+      const rowHeight = 10;
+      // Draw summary header
+      doc.setFillColor(160, 23, 117);
+      doc.rect(margin, yPos, usableWidth, 10, "F");
+
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.text("Usage Summary by Type", margin + 5, yPos + 7);
+
+      yPos += 10;
+
+      // Draw summary rows
+      typeSummaries.forEach((summary, index) => {
+        // Add a page if we're about to overflow
+        if (yPos > pageHeight - 50) {
+          doc.addPage();
+          yPos = margin;
+        }
+
+        // Draw row background (alternating colors)
+        if (index % 2 === 0) {
+          doc.setFillColor(245, 245, 245);
+          doc.rect(margin, yPos, usableWidth, rowHeight + 5, "F");
+        }
+
+        // Draw text
+        doc.setTextColor(44, 62, 80);
+        doc.setFontSize(11);
+        doc.setFont("helvetica", "bold");
+        doc.text(summary.usage_type + ":", margin + 5, yPos + 7);
+        doc.setFont("helvetica", "normal");
+        doc.text(summary.display_total, pageWidth - margin - 5, yPos + 7, {
+          align: "right",
+        });
+
+        yPos += rowHeight + 5;
+      });
+
+      // Set starting Y position for table
+      yPos += 10;
 
       // Define column widths as percentages of usable width
       const colWidths = [
@@ -436,7 +477,7 @@ function ExcelPDF() {
       doc.setFont("helvetica", "normal");
       doc.setTextColor(0, 0, 0);
 
-      const rowHeight = 10;
+      
 
       rows.forEach((row, index) => {
         // Add a page if we're about to overflow
@@ -506,46 +547,7 @@ function ExcelPDF() {
         yPos += rowHeight;
       });
 
-      // Add summary section
-      yPos += 10;
-
-      // Draw summary header
-      doc.setFillColor(160, 23, 117);
-      doc.rect(margin, yPos, usableWidth, 10, "F");
-
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(12);
-      doc.setFont("helvetica", "bold");
-      doc.text("Usage Summary by Type", margin + 5, yPos + 7);
-
-      yPos += 10;
-
-      // Draw summary rows
-      typeSummaries.forEach((summary, index) => {
-        // Add a page if we're about to overflow
-        if (yPos > pageHeight - 50) {
-          doc.addPage();
-          yPos = margin;
-        }
-
-        // Draw row background (alternating colors)
-        if (index % 2 === 0) {
-          doc.setFillColor(245, 245, 245);
-          doc.rect(margin, yPos, usableWidth, rowHeight + 5, "F");
-        }
-
-        // Draw text
-        doc.setTextColor(44, 62, 80);
-        doc.setFontSize(11);
-        doc.setFont("helvetica", "bold");
-        doc.text(summary.usage_type + ":", margin + 5, yPos + 7);
-        doc.setFont("helvetica", "normal");
-        doc.text(summary.display_total, pageWidth - margin - 5, yPos + 7, {
-          align: "right",
-        });
-
-        yPos += rowHeight + 5;
-      });
+      
 
       // Add a footer with company information
       const footerY = pageHeight - 20;
