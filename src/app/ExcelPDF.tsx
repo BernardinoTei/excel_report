@@ -1,5 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import * as XLSX from "xlsx";
 import { jsPDF } from "jspdf";
 import { Button } from "@/components/ui/button"
@@ -10,15 +11,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { AlertCircle, FileUp } from "lucide-react";
-import logo from '../assets/AfricellLogo.png'
 import logoImage from '@/assets/logoImage'
 
 
 
 
 function ExcelPDF() {
-  const [excelData, setExcelData] = useState(null);
-  const [error, setError] = useState(null);
+  const [excelData, setExcelData] = useState<any>(null);
+  const [error, setError] = useState<any>(null);
   const [userName, setUserName] = useState("");
   const [documentNumber, setDocumentNumber] = useState("");
   const [availableSheets, setAvailableSheets] = useState([]);
@@ -33,7 +33,7 @@ function ExcelPDF() {
     "/event/delayed/session/telco/gsm/sms": "Serviço de SMS",
   };
 
-  const calculateDateRange = (rows) => {
+  const calculateDateRange = (rows:any) => {
     if (!rows || rows.length === 0) return { min: "N/A", max: "N/A" };
 
     let minDate = null;
@@ -84,7 +84,7 @@ function ExcelPDF() {
   };
 
   // Function to handle file upload and parse Excel data
-  const handleFileUpload = (event) => {
+  const handleFileUpload = (event:any) => {
     const file = event.target.files[0];
     setError(null); // Reset any previous errors
     setExcelData(null); // Reset existing data
@@ -130,7 +130,7 @@ function ExcelPDF() {
   };
 
   // Function to process the selected sheet
-  const processSheet = (wb, sheetName) => {
+  const processSheet = (wb:any, sheetName:any) => {
     if (!wb || !sheetName) return;
 
     try {
@@ -153,14 +153,14 @@ function ExcelPDF() {
   };
 
   // Handle sheet selection change
-  const handleSheetChange = (e) => {
+  const handleSheetChange = (e:any) => {
     const newSelectedSheet = e;
     setSelectedSheet(newSelectedSheet);
     processSheet(workbook, newSelectedSheet);
   };
 
   // Function to convert units based on service type
-  const convertUnits = (amount, serviceType) => {
+  const convertUnits = (amount:any, serviceType:any) => {
     let value = parseFloat(amount) || 0;
     let unit = "";
     let display = "";
@@ -294,7 +294,7 @@ function ExcelPDF() {
   };
 
   // Helper function to format date/time strings for better display
-  const formatDateTime = (dateTimeString) => {
+  const formatDateTime = (dateTimeString:any) => {
     if (!dateTimeString) return "N/A";
 
     // Try to format the date string to make it more readable and shorter
@@ -318,7 +318,7 @@ function ExcelPDF() {
   };
 
   // Function to truncate text for PDF table cells
-  const truncateText = (text, maxLength = 20) => {
+  const truncateText = (text:any, maxLength = 20) => {
     if (!text) return "";
 
     text = String(text);
@@ -479,7 +479,7 @@ function ExcelPDF() {
 
       
 
-      rows.forEach((row, index) => {
+      rows.forEach((row:any, index:any) => {
         // Add a page if we're about to overflow
         if (yPos > pageHeight - 50) {
           doc.addPage();
@@ -566,7 +566,8 @@ function ExcelPDF() {
       );
 
       // Add page numbers to all pages
-      const totalPages = doc.internal.getNumberOfPages();
+      // const totalPages = doc?.internal?.getNumberOfPages();
+      const totalPages = doc?.internal?.pages.length - 1;
       for (let i = 1; i <= totalPages; i++) {
         doc.setPage(i);
         doc.setFontSize(8);
@@ -576,7 +577,7 @@ function ExcelPDF() {
 
       // Save the generated PDF
       doc.save(`usage-statement-${documentNumber || "report"}.pdf`);
-    } catch (err) {
+    } catch (err: any) {
       setError("Error generating PDF: " + err.message);
       console.error("PDF generation error 2:", err);
     }
@@ -636,7 +637,7 @@ function ExcelPDF() {
           <Label htmlFor="fileUpload">Upload Excel File</Label>
           <div className="flex items-center gap-2">
             <Input id="fileUpload" type="file" accept=".xlsx, .xls" onChange={handleFileUpload} className="flex-1" />
-            <Button variant="outline" size="icon" onClick={() => document.getElementById("fileUpload").click()}>
+            <Button variant="outline" size="icon" onClick={() => document.getElementById("fileUpload")?.click()}>
               <FileUp className="h-4 w-4" />
             </Button>
           </div>
@@ -689,7 +690,6 @@ function ExcelPDF() {
             </Table>
           </div>
         </div>
-        
         <div className="pb-8">
           <h3 className="text-xl font-semibold text-slate-800 pb-3 border-b border-slate-200 mb-4">
             Data Preview with Unit Conversions
@@ -722,7 +722,6 @@ function ExcelPDF() {
           </div>
         </div>
 
-        
       </div>
     )}
   </div>
