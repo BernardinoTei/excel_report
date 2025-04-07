@@ -1,8 +1,22 @@
-import React, { useState } from "react";
+'use client'
+import React, { useEffect, useState } from "react";
 import * as XLSX from "xlsx";
 import { jsPDF } from "jspdf";
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { AlertCircle, FileUp } from "lucide-react";
+import logo from '../assets/AfricellLogo.png'
+import logoImage from '@/assets/logoImage'
 
-function App() {
+
+
+
+function ExcelPDF() {
   const [excelData, setExcelData] = useState(null);
   const [error, setError] = useState(null);
   const [userName, setUserName] = useState("");
@@ -140,7 +154,7 @@ function App() {
 
   // Handle sheet selection change
   const handleSheetChange = (e) => {
-    const newSelectedSheet = e.target.value;
+    const newSelectedSheet = e;
     setSelectedSheet(newSelectedSheet);
     processSheet(workbook, newSelectedSheet);
   };
@@ -327,12 +341,6 @@ function App() {
         setError("Could not extract data from the Excel file or all amounts are zero");
         return;
       }
-
-
-
-
-
-
       // Create new jsPDF instance
       const doc = new jsPDF();
 
@@ -347,30 +355,31 @@ function App() {
       doc.rect(0, 0, pageWidth, 40, "F");
 
       // Add company logo or placeholder
-      doc.setFillColor(41, 128, 185);
-      doc.rect(margin, 10, 30, 15, "F");
+      // doc.setFillColor(41, 128, 185);
+      // doc.rect(margin, 10, 30, 15, "F");
+      doc.addImage(logoImage, 'PNG', margin, 10, 30, 15);
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(12);
       doc.setFont("helvetica", "bold");
-      doc.text("Africell", margin + 8, 20);
+      // doc.text("Africell", margin + 8, 20);
 
       // Add document number and user name at the top
       doc.setTextColor(44, 62, 80);
       doc.setFontSize(14);
       doc.text(
-        `Document #: ${documentNumber || "N/A"}`,
+        `Client Nº: ${documentNumber || "N/A"}`,
         pageWidth - margin,
         15,
         { align: "right" }
       );
       doc.setFontSize(12);
-      doc.text(`User: ${userName || "N/A"}`, pageWidth - margin, 25, {
+      doc.text(`Client Name: ${userName || "N/A"}`, pageWidth - margin, 25, {
         align: "right",
       });
-      doc.setFontSize(12);
-      doc.text(`${dateRange.min} - ${dateRange.max}`, pageWidth - margin, 35, {
-        align: "right",
-      });
+      // doc.setFontSize(12);
+      // doc.text(`${dateRange.min} - ${dateRange.max}`, pageWidth - margin, 35, {
+      //   align: "right",
+      // });
 
       // Add title
       doc.setFontSize(16);
@@ -383,7 +392,8 @@ function App() {
       const date = new Date().toLocaleString();
       // Display the date range
 
-      doc.text(`Sheet: ${selectedSheet}`, margin, 45);
+      // doc.text(`Sheet: ${selectedSheet}`, margin, 45);
+      doc.text(`${dateRange.min} - ${dateRange.max}`,  margin, 45);
       doc.text(`Generated on: ${date}`, pageWidth - margin, 45, {
         align: "right",
       });
@@ -400,7 +410,7 @@ function App() {
       ];
 
       // Draw table header
-      doc.setFillColor(41, 128, 185);
+      doc.setFillColor(160, 23, 117);
       doc.rect(margin, yPos, usableWidth, 10, "F");
 
       // Draw header text
@@ -435,7 +445,7 @@ function App() {
           yPos = margin;
 
           // Add header on new page
-          doc.setFillColor(41, 128, 185);
+          doc.setFillColor(160, 23, 117);
           doc.rect(margin, yPos, usableWidth, 10, "F");
 
           doc.setTextColor(255, 255, 255);
@@ -500,7 +510,7 @@ function App() {
       yPos += 10;
 
       // Draw summary header
-      doc.setFillColor(41, 128, 185);
+      doc.setFillColor(160, 23, 117);
       doc.rect(margin, yPos, usableWidth, 10, "F");
 
       doc.setTextColor(255, 255, 255);
@@ -566,412 +576,155 @@ function App() {
       doc.save(`usage-statement-${documentNumber || "report"}.pdf`);
     } catch (err) {
       setError("Error generating PDF: " + err.message);
-      console.error("PDF generation error:", err);
+      console.error("PDF generation error 2:", err);
     }
   };
 
+  const { rows, typeSummaries } = extractRequiredData()
+  const dateRange = rows.length > 0 ? calculateDateRange(rows) : { min: "N/A", max: "N/A" }
+
+
   return (
-    <>
-    <div
-      style={{
-        width: "1910px",
-        height: "950px",
-        margin: "0 auto",
-        padding: "20px",
-        fontFamily: "'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
-        color: "#2d3748",
-        backgroundColor: "#f7fafc",
-        borderRadius: "8px",
-        boxShadow: "0 2px 10px rgba(0, 0, 0, 0.05)",
-      }}
-    >
-      <h1
-        style={{
-          color: "#1a365d",
-          borderBottom: "2px solid #4299e1",
-          paddingBottom: "10px",
-          fontSize: "28px",
-        }}
-      >
-        Excel to PDF Statement Generator
-      </h1>
+    <div className="container mx-auto py-6 px-4 max-w-6xl">
+    <h1 className="text-2xl font-bold text-slate-800 pb-4 border-b border-slate-200 mb-4">
+      Excel to PDF Statement Generator
+    </h1>
 
-      {error && (
-        <div
-          style={{
-            color: "#742a2a",
-            backgroundColor: "#fed7d7",
-            padding: "12px 20px",
-            marginBottom: "20px",
-            borderRadius: "5px",
-            border: "1px solid #feb2b2",
-          }}
-        >
-          <strong>Error:</strong> {error}
-        </div>
-      )}
+    {error && (
+      <Alert variant="destructive" className="mb-6">
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>Error</AlertTitle>
+        <AlertDescription>{error}</AlertDescription>
+      </Alert>
+    )}
 
-      <div
-        style={{
-          backgroundColor: "#ffffff",
-          padding: "24px",
-          borderRadius: "8px",
-          marginBottom: "20px",
-          border: "1px solid #e2e8f0",
-          boxShadow: "0 1px 3px rgba(0, 0, 0, 0.05)",
-        }}
-      >
-        <h3 style={{ marginTop: 0, color: "#1a365d", fontSize: "20px" }}>Document Information</h3>
-        <div
-          style={{
-            display: "flex",
-            gap: "20px",
-            marginBottom: "20px",
-            flexWrap: "wrap",
-          }}
-        >
-          <div style={{ flex: "1 1 300px" }}>
-            <label
-              style={{
-                display: "block",
-                marginBottom: "6px",
-                fontWeight: "600",
-                color: "#2d3748",
-              }}
-            >
-              User Name:
-            </label>
-            <input
-              type="text"
+    <Card className="mb-8">
+      <CardHeader>
+        <CardTitle>Document Information</CardTitle>
+        <CardDescription>Enter the details for your statement</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-2">
+            <Label htmlFor="userName">Client Name</Label>
+            <Input
+              id="userName"
               value={userName}
               onChange={(e) => setUserName(e.target.value)}
               placeholder="Enter user name"
-              style={{
-                width: "100%",
-                padding: "10px 14px",
-                border: "1px solid #cbd5e0",
-                borderRadius: "6px",
-                fontSize: "16px",
-                transition: "border-color 0.2s ease",
-                outline: "none",
-                boxShadow: "0 1px 2px rgba(0, 0, 0, 0.05)",
-              }}
             />
           </div>
-          <div style={{ flex: "1 1 300px" }}>
-            <label
-              style={{
-                display: "block",
-                marginBottom: "6px",
-                fontWeight: "600",
-                color: "#2d3748",
-              }}
-            >
-              Document Number:
-            </label>
-            <input
-              type="text"
+          <div className="space-y-2">
+            <Label htmlFor="documentNumber">Client Number</Label>
+            <Input
+              id="documentNumber"
               value={documentNumber}
               onChange={(e) => setDocumentNumber(e.target.value)}
               placeholder="Enter document number"
-              style={{
-                width: "100%",
-                padding: "10px 14px",
-                border: "1px solid #cbd5e0",
-                borderRadius: "6px",
-                fontSize: "16px",
-                transition: "border-color 0.2s ease",
-                outline: "none",
-                boxShadow: "0 1px 2px rgba(0, 0, 0, 0.05)",
-              }}
             />
           </div>
         </div>
 
-        <h3 style={{
-          color: "#1a365d",
-          borderBottom: "1px solid #e2e8f0",
-          paddingBottom: "10px",
-          marginTop: "24px",
-          fontSize: "18px",
-        }}>
-          Statement Period
-        </h3>
-        <p style={{ color: "#4a5568", fontWeight: "500" }}>
-          {`min:${calculateDateRange(extractRequiredData().rows).min} max:${calculateDateRange(extractRequiredData().rows).max}`}
-        </p>
-
-        <div style={{ marginTop: "24px" }}>
-          <label
-            style={{
-              display: "block",
-              marginBottom: "6px",
-              fontWeight: "600",
-              color: "#2d3748",
-            }}
-          >
-            Upload Excel File:
-          </label>
-          <input
-            type="file"
-            accept=".xlsx, .xls"
-            onChange={handleFileUpload}
-            style={{
-              width: "100%",
-              padding: "8px 0",
-              marginBottom: "20px",
-              color: "#4a5568",
-            }}
-          />
+        <div className="pt-2 border-t border-slate-100">
+          <h3 className="text-md font-medium mb-2">Statement Period</h3>
+          <p className="text-sm text-slate-600">{`${dateRange.min} - ${dateRange.max}`}</p>
         </div>
 
-        {/* Sheet Selection Dropdown - Only show if sheets are available */}
+        <div className="space-y-2 pt-2">
+          <Label htmlFor="fileUpload">Upload Excel File</Label>
+          <div className="flex items-center gap-2">
+            <Input id="fileUpload" type="file" accept=".xlsx, .xls" onChange={handleFileUpload} className="flex-1" />
+            <Button variant="outline" size="icon" onClick={() => document.getElementById("fileUpload").click()}>
+              <FileUp className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+
         {availableSheets.length > 0 && (
-          <div style={{ marginBottom: "24px" }}>
-            <label
-              style={{
-                display: "block",
-                marginBottom: "6px",
-                fontWeight: "600",
-                color: "#2d3748",
-              }}
-            >
-              Select Sheet:
-            </label>
-            <select
-              value={selectedSheet}
-              onChange={handleSheetChange}
-              style={{
-                width: "100%",
-                padding: "10px 14px",
-                border: "1px solid #cbd5e0",
-                borderRadius: "6px",
-                fontSize: "16px",
-                backgroundColor: "white",
-                boxShadow: "0 1px 2px rgba(0, 0, 0, 0.05)",
-                outline: "none",
-              }}
-            >
-              {availableSheets.map((sheet) => (
-                <option key={sheet} value={sheet}>
-                  {sheet}
-                </option>
-              ))}
-            </select>
+          <div className="space-y-2 z-30">
+            <Label htmlFor="sheetSelect">Select Sheet</Label>
+            <Select value={selectedSheet} onValueChange={handleSheetChange}>
+              <SelectTrigger id="sheetSelect">
+                <SelectValue placeholder="Select a sheet" />
+              </SelectTrigger>
+              <SelectContent>
+                {availableSheets.map((sheet) => (
+                  <SelectItem key={sheet} value={sheet}>
+                    {sheet}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         )}
 
-        <button
-          onClick={generatePDF}
-          disabled={!excelData}
-          style={{
-            padding: "12px 24px",
-            backgroundColor: !excelData ? "#a0aec0" : "#4299e1",
-            color: "white",
-            border: "none",
-            borderRadius: "6px",
-            cursor: !excelData ? "not-allowed" : "pointer",
-            fontSize: "16px",
-            fontWeight: "600",
-            transition: "background-color 0.2s ease",
-            boxShadow: !excelData ? "none" : "0 2px 4px rgba(66, 153, 225, 0.3)",
-            outline: "none",
-          }}
-        >
+        <Button onClick={generatePDF} disabled={!excelData} variant="outline" className="w-full md:w-auto bg-white">
           Generate Statement PDF
-        </button>
-      </div>
+        </Button>
+      </CardContent>
+    </Card>
 
-      {excelData && (
-        <div style={{ marginTop: "28px" }}>
-          <h3
-            style={{
-              color: "#1a365d",
-              borderBottom: "1px solid #e2e8f0",
-              paddingBottom: "10px",
-              fontSize: "20px",
-            }}
-          >
-            Data Preview with Unit Conversions (Excluding Zero Amounts)
-          </h3>
-          <div style={{ overflowX: "auto", borderRadius: "8px", boxShadow: "0 2px 6px rgba(0, 0, 0, 0.05)" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead>
-                <tr style={{ backgroundColor: "#2b6cb0", color: "white" }}>
-                  <th
-                    style={{
-                      padding: "14px 18px",
-                      border: "1px solid #bee3f8",
-                      textAlign: "left",
-                      fontWeight: "600",
-                    }}
-                  >
-                    Start Time
-                  </th>
-                  <th
-                    style={{
-                      padding: "14px 18px",
-                      border: "1px solid #bee3f8",
-                      textAlign: "left",
-                      fontWeight: "600",
-                    }}
-                  >
-                    End Time
-                  </th>
-                  <th
-                    style={{
-                      padding: "14px 18px",
-                      border: "1px solid #bee3f8",
-                      textAlign: "left",
-                      fontWeight: "600",
-                    }}
-                  >
-                    Usage Type
-                  </th>
-                  <th
-                    style={{
-                      padding: "14px 18px",
-                      border: "1px solid #bee3f8",
-                      textAlign: "left",
-                      fontWeight: "600",
-                    }}
-                  >
-                    Raw Amount
-                  </th>
-                  <th
-                    style={{
-                      padding: "14px 18px",
-                      border: "1px solid #bee3f8",
-                      textAlign: "left",
-                      fontWeight: "600",
-                    }}
-                  >
-                    Converted Amount
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {extractRequiredData().rows.map((row, rowIndex) => (
-                  <tr
-                    key={rowIndex}
-                    style={{
-                      backgroundColor: rowIndex % 2 === 0 ? "#ebf8ff" : "white",
-                    }}
-                  >
-                    <td
-                      style={{ padding: "12px 18px", border: "1px solid #e2e8f0" }}
-                    >
-                      {row.start_time}
-                    </td>
-                    <td
-                      style={{ padding: "12px 18px", border: "1px solid #e2e8f0" }}
-                    >
-                      {row.end_time}
-                    </td>
-                    <td
-                      style={{ padding: "12px 18px", border: "1px solid #e2e8f0" }}
-                    >
-                      {row.usage_type}
-                    </td>
-                    <td
-                      style={{ padding: "12px 18px", border: "1px solid #e2e8f0" }}
-                    >
-                      {row.raw_amount}
-                    </td>
-                    <td
-                      style={{ padding: "12px 18px", border: "1px solid #e2e8f0" }}
-                    >
-                      {row.display_amount}
-                    </td>
-                  </tr>
+    {excelData && (
+      <div className="space-y-8">
+        <div className="pb-8">
+          <h3 className="text-xl font-semibold text-slate-800 pb-3 border-b border-slate-200 mb-4">Usage Summary</h3>
+          <div className="rounded-md border overflow-hidden max-w-md">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Usage Type</TableHead>
+                  <TableHead>Total Consumption</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {typeSummaries.map((summary, index) => (
+                  <TableRow key={index}>
+                    <TableCell className="font-medium">{summary.usage_type}</TableCell>
+                    <TableCell>{summary.display_total}</TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
-          </div>
-
-          <h3
-            style={{
-              color: "#1a365d",
-              borderBottom: "1px solid #e2e8f0",
-              paddingBottom: "10px",
-              marginTop: "32px",
-              fontSize: "20px",
-            }}
-          >
-            Usage Summary
-          </h3>
-          <div style={{ overflowX: "auto", borderRadius: "8px", boxShadow: "0 2px 6px rgba(0, 0, 0, 0.05)" }}>
-            <table
-              style={{
-                width: "50%",
-                borderCollapse: "collapse",
-                marginBottom: "30px",
-              }}
-            >
-              <thead>
-                <tr style={{ backgroundColor: "#2b6cb0", color: "white" }}>
-                  <th
-                    style={{
-                      padding: "14px 18px",
-                      border: "1px solid #bee3f8",
-                      textAlign: "left",
-                      fontWeight: "600",
-                    }}
-                  >
-                    Usage Type
-                  </th>
-                  <th
-                    style={{
-                      padding: "14px 18px",
-                      border: "1px solid #bee3f8",
-                      textAlign: "left",
-                      fontWeight: "600",
-                    }}
-                  >
-                    Total Consumption
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {extractRequiredData().typeSummaries.map(
-                  (summary, rowIndex) => (
-                    <tr
-                      key={rowIndex}
-                      style={{
-                        backgroundColor:
-                          rowIndex % 2 === 0 ? "#ebf8ff" : "white",
-                      }}
-                    >
-                      <td
-                        style={{
-                          padding: "12px 18px",
-                          border: "1px solid #e2e8f0",
-                          fontWeight: "bold",
-                          color: "#2d3748",
-                        }}
-                      >
-                        {summary.usage_type}
-                      </td>
-                      <td
-                        style={{
-                          padding: "12px 18px",
-                          border: "1px solid #e2e8f0",
-                          color: "#2d3748",
-                        }}
-                      >
-                        {summary.display_total}
-                      </td>
-                    </tr>
-                  )
-                )}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         </div>
-      )}
-    </div>
-    </>
+        
+        <div className="pb-8">
+          <h3 className="text-xl font-semibold text-slate-800 pb-3 border-b border-slate-200 mb-4">
+            Data Preview with Unit Conversions
+          </h3>
+          <div className="rounded-md border overflow-hidden">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Start Time</TableHead>
+                    <TableHead>End Time</TableHead>
+                    <TableHead>Usage Type</TableHead>
+                    <TableHead>Raw Amount</TableHead>
+                    <TableHead>Converted Amount</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {rows.map((row, index) => (
+                    <TableRow key={index}>
+                      <TableCell>{row.start_time}</TableCell>
+                      <TableCell>{row.end_time}</TableCell>
+                      <TableCell>{row.usage_type}</TableCell>
+                      <TableCell>{row.raw_amount}</TableCell>
+                      <TableCell>{row.display_amount}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        </div>
+
+        
+      </div>
+    )}
+  </div>
   );
 }
 
-export default App;
+export default ExcelPDF;
