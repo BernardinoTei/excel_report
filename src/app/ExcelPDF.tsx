@@ -262,7 +262,11 @@ function ExcelPDF() {
           display_amount: convertedAmount.display,
         };
       })
-      .filter((row:any) => row.raw_amount > 0); // Filter out rows with zero amount
+      .filter((row:any) => row.raw_amount > 0)
+      .filter(
+        (row: any, index: number, self: any[]) =>
+          self.findIndex(r => r.start_time === row.start_time) === index
+      );; // Filter out rows with zero amount
 
     // Group by usage type for summary
     const groupedByType = extractedRows.reduce((acc:any, row:any) => {
