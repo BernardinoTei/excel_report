@@ -164,25 +164,28 @@ function ExcelPDF() {
 
   // Function to convert units based on service type
   const convertUnits = (amount:any, serviceType:any) => {
-    let value = parseFloat(amount) || 0;
+    const value = parseFloat(amount) || 0;
     let display = "";
 
     switch (serviceType) {
       case "Serviço de Dados e internet":
-        // Convert KB to appropriate unit (KB, MB, GB)
+        let displayValue = value; // value in bytes
+      
         if (value < 1024) {
-          // Keep as KB if less than 1 MB
-          display = `${value.toFixed(2)} KB`;
-        } else if (value < 1048576) {
-          // Convert to MB if less than 1 GB
-          value = value / 1024;
-          display = `${value.toFixed(2)} MB`;
+          display = `${displayValue.toFixed(2)} B`;
+        } else if (value < 1024 ** 2) {
+          displayValue = value / 1024;
+          display = `${displayValue.toFixed(2)} KB`;
+        } else if (value < 1024 ** 3) {
+          displayValue = value / (1024 ** 2);
+          display = `${displayValue.toFixed(2)} MB`;
         } else {
-          // Convert to GB
-          value = value / 1048576;
-          display = `${value.toFixed(2)} GB`;
+          displayValue = value / (1024 ** 3);
+          display = `${displayValue.toFixed(2)} GB`;
         }
-        return { value, display };
+      
+        return { value: displayValue, display };
+      
 
       case "Serviço de Voz":
         // Convert seconds to hours:minutes:seconds
@@ -540,10 +543,10 @@ function ExcelPDF() {
         doc.setFontSize(8); // Smaller font to fit more text
 
         xPos = margin;
-        doc.text(truncateText(row.start_time, 18), xPos + 2, yPos + 6);
+        doc.text(truncateText(row.start_time, 50), xPos + 2, yPos + 6);
         xPos += colWidths[0];
 
-        doc.text(truncateText(row.end_time, 18), xPos + 2, yPos + 6);
+        doc.text(truncateText(row.end_time, 50), xPos + 2, yPos + 6);
         xPos += colWidths[1];
 
         doc.text(truncateText(row.usage_type, 28), xPos + 2, yPos + 6);
