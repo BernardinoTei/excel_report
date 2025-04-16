@@ -343,6 +343,7 @@ function ExcelPDF() {
       // Excel's base date is Jan 1, 1900
       const excelEpoch = new Date(Date.UTC(1899, 11, 30));
       const date = new Date(excelEpoch.getTime() + input * 86400000); // 86400000 ms/day
+      date.setHours(date.getHours() - 1);
       return formatAsString(date);
     }
   
