@@ -22,9 +22,13 @@ function ExcelPDF() {
   const [userName, setUserName] = useState("");
   const [documentNumber, setDocumentNumber] = useState("");
   const [availableSheets, setAvailableSheets] = useState([]);
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [selectedSheet, setSelectedSheet] = useState("");
   const [workbook, setWorkbook] = useState(null);
 
+
+  
   // Define the mappings for the event paths
   const eventMappings:any = {
     "/event/billing/product/fee/purchase": "Ativação de plano",
@@ -33,58 +37,57 @@ function ExcelPDF() {
     "/event/delayed/session/telco/gsm/sms": "Serviço de SMS",
   };
 
-  const calculateDateRange = (rows:any) => {
+  const calculateDateRange = (rows: any) => {
     if (!rows || rows.length === 0) return { min: "N/A", max: "N/A" };
-
-    let minDate: number | Date | null = null;
-    let maxDate: number | Date | null = null;
-
-    rows.forEach((row:any) => {
-      // Parse start time
-      if (row.start_time && row.start_time !== "N/A" && row.amount != 0) {
-        try {
-          const startDate = new Date(row.start_time);
-          if (!isNaN(startDate.getTime())) {
-            if (minDate === null || startDate < minDate) {
-              minDate = startDate;
-            }
-          }
-        } catch (e) {
-          // Skip invalid dates
-          console.log(e);
+  
+    let minDate: Date | null = null;
+    let maxDate: Date | null = null;
+  
+    const parseDateTime = (str: string) => {
+      try {
+        const [datePart, timePart] = str.split(',').map(s => s.trim());
+        const [day, month, year] = datePart.split('/').map(Number);
+        const [hours, minutes] = timePart.split(':').map(Number);
+        return new Date(year, month - 1, day, hours, minutes);
+      } catch (e) {
+        console.log(e);
+        return null;
+      }
+    };
+  
+    rows.forEach((row: any) => {
+      if (row.start_time && row.start_time !== "N/A" && row.raw_amount !== 0) {
+        const startDate = parseDateTime(row.start_time);
+        if (startDate && (minDate === null || startDate < minDate)) {
+          minDate = startDate;
         }
       }
 
-      // Parse end time
-      if (row.end_time && row.end_time !== "N/A" && row.amount != 0) {
-        try {
-          const endDate = new Date(row.end_time);
-         
-          
-          if (!isNaN(endDate.getTime())) {
-            if (maxDate === null || endDate > maxDate) {
-              maxDate = endDate;
-            }
-          }
-        } catch (e:any) {
-          // Skip invalid dates
-          console.log(e);
-          
+  
+      if (row.end_time && row.end_time !== "N/A" && row.raw_amount !== 0) {
+        const endDate = parseDateTime(row.end_time);
+        if (endDate && (maxDate === null || endDate > maxDate)) {
+          maxDate = endDate;
         }
       }
     });
-
-    // Format dates as DD/MM/YYYY
-    const formatDate = (date:any) => {
+  
+    const formatDate = (date: Date | null) => {
       if (!date) return "N/A";
-      return `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
+      const day = date.getDate().toString().padStart(2, '0');
+      const month = (date.getMonth() + 1).toString().padStart(2, '0');
+      const year = date.getFullYear();
+      const hours = date.getHours().toString().padStart(2, '0');
+      const minutes = date.getMinutes().toString().padStart(2, '0');
+      return `${day}/${month}/${year}, ${hours}:${minutes}`;
     };
-
+  
     return {
       min: formatDate(minDate),
-      max: formatDate(maxDate)
+      max: formatDate(maxDate),
     };
   };
+  
 
   // Function to handle file upload and parse Excel data
   const handleFileUpload = (event:any) => {
@@ -237,6 +240,9 @@ function ExcelPDF() {
       (h:any) => h && h.toString().toLowerCase().includes("amount")
     );
 
+  
+    
+
     // Extract only the rows with the required fields and non-zero amounts
     const extractedRows = excelData
       .slice(1)
@@ -269,7 +275,39 @@ function ExcelPDF() {
       .filter(
         (row: any, index: number, self: any[]) =>
           self.findIndex(r => r.start_time === row.start_time) === index
-      );; // Filter out rows with zero amount
+      ).filter((row: any) => {
+        if (!startDate || !endDate) return true; // no filter if empty
+
+        const parseDateTime = (str: string) => {
+          try {
+            const [datePart, timePart] = str.split(',').map(s => s.trim());
+            const [day, month, year] = datePart.split('/').map(Number);
+            const [hours, minutes] = timePart.split(':').map(Number);
+            console.log("end");
+            console.log(new Date(year, month - 1, day, hours, minutes));
+            return new Date(year, month - 1, day, hours, minutes);
+          } catch {
+            console.log("catch");
+            return null;
+          }
+        };
+      
+        const start = parseDateTime(startDate);
+        const end = parseDateTime(endDate);
+        const rowDate = parseDateTime(row.start_time);
+        // const start ="" //parseDateTime(startDate);
+        // const end ="" // parseDateTime(endDate);
+        // const rowDate ="" // parseDateTime(row.start_time);
+        // console.log("strat",startDate);
+        
+        // parseDateTime(startDate);
+      
+        return start && end && rowDate && rowDate >= start && rowDate <= end;
+      }).sort((a:any, b:any) => {
+        const dateA = parseDateTime(a.start_time);
+        const dateB = parseDateTime(b.start_time);
+        return dateA.getTime() - dateB.getTime();
+      });
 
     // Group by usage type for summary
     const groupedByType = extractedRows.reduce((acc:any, row:any) => {
@@ -302,29 +340,34 @@ function ExcelPDF() {
     };
   };
 
-  // Helper function to format date/time strings for better display
-  const formatDateTime = (dateTimeString:any) => {
-    if (!dateTimeString) return "DD/MM/AAAA";
 
-    // Try to format the date string to make it more readable and shorter
+
+  // Helper function to format date/time strings for better display
+  const formatDateTime = (dateTimeString: any) => {
+    if (!dateTimeString) return "DD/MM/AAAA, HH:MM";
+  
     try {
-      // Check if it's already a date object or can be parsed as one
       const date = new Date(dateTimeString);
       if (!isNaN(date.getTime())) {
-        return date.toLocaleString("en-US", {
-          year: "numeric",
-          month: "2-digit",
-          day: "2-digit",
-          hour: "2-digit",
-          minute: "2-digit",
-        });
+        const day = date.getDate().toString().padStart(2, '0');
+        const month = (date.getMonth() + 1).toString().padStart(2, '0');
+        const year = date.getFullYear();
+        const hours = date.getHours().toString().padStart(2, '0');
+        const minutes = date.getMinutes().toString().padStart(2, '0');
+        return `${day}/${month}/${year}, ${hours}:${minutes}`;
       }
     } catch (e) {
-      // If parsing fails, return the original string
       console.log(e);
     }
-
+  
     return String(dateTimeString);
+  };
+  
+  const parseDateTime = (str: string) => {
+    const [datePart, timePart] = str.split(',').map(s => s.trim());
+    const [day, month, year] = datePart.split('/').map(Number);
+    const [hours, minutes] = timePart.split(':').map(Number);
+    return new Date(year, month - 1, day, hours, minutes);
   };
 
   // Function to truncate text for PDF table cells
@@ -399,7 +442,8 @@ function ExcelPDF() {
       // Add sheet name and timestamp
       doc.setFontSize(10);
       doc.setTextColor(100, 100, 100);
-      const date = new Date().toLocaleString();
+      const date = formatDate(new Date());
+
       // Display the date range
 
       // doc.text(`Sheet: ${selectedSheet}`, margin, 45);
@@ -449,6 +493,7 @@ function ExcelPDF() {
         yPos += rowHeight + 5;
       });
 
+      drawFooter(doc, pageWidth, pageHeight, margin);
       // Set starting Y position for table
       yPos += 10;
 
@@ -492,8 +537,10 @@ function ExcelPDF() {
       rows.forEach((row:any, index:any) => {
         // Add a page if we're about to overflow
         if (yPos > pageHeight - 50) {
+          drawFooter(doc, pageWidth, pageHeight, margin);
+          drawLogo(doc, margin);
           doc.addPage();
-          yPos = margin;
+          yPos = margin + 20;
 
           // Add header on new page
           doc.setFillColor(160, 23, 117);
@@ -558,33 +605,23 @@ function ExcelPDF() {
       });
 
       
+      drawLogo(doc, margin);
+      drawFooter(doc, pageWidth, pageHeight, margin);
 
-      // Add a footer with company information
-      const footerY = pageHeight - 20;
-      doc.setLineWidth(0.5);
-      doc.setDrawColor(200, 200, 200);
-      doc.line(margin, footerY, pageWidth - margin, footerY);
+      const totalPages = doc.internal.pages.length - 1;
 
-      doc.setFontSize(9);
-      doc.setTextColor(100, 100, 100);
-      doc.setFont("helvetica", "normal");
-      doc.text(
-        "Africell Angola | Rua dos Municipios dos Portugueses, Luanda, Angola | apoio.cliente@africell.ao | +244 950 180 123",
-        pageWidth / 2,
-        footerY + 7,
-        { align: "center" }
-      );
-
-      // Add page numbers to all pages
-      // const totalPages = doc?.internal?.getNumberOfPages();
-      const totalPages = doc?.internal?.pages.length - 1;
       for (let i = 1; i <= totalPages; i++) {
         doc.setPage(i);
         doc.setFontSize(8);
         doc.setTextColor(150, 150, 150);
-        doc.text(`Page ${i} of ${totalPages}`, margin, pageHeight - 10);
+      
+        const text = `Página ${i} de ${totalPages}`;
+        const textWidth = doc.getTextWidth(text);
+      
+        // Position near bottom-right, 12px above bottom
+        doc.text(text, pageWidth - margin - textWidth, pageHeight - 25);
       }
-
+      
       // Save the generated PDF
       doc.save(`usage-statement-${documentNumber || "report"}.pdf`);
     } catch (err: any) {
@@ -592,9 +629,39 @@ function ExcelPDF() {
       console.error("PDF generation error 2:", err);
     }
   };
+  const formatDate = (date: Date) => {
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
+  
+  const drawLogo = (doc: any, margin: number) => {
+    doc.addImage(logoImage, 'PNG', margin, 10, 30, 15); // X, Y, width, height
+  };
+  
+
+  const drawFooter = (doc: any, pageWidth: number, pageHeight: number, margin: number) => {
+    const footerY = pageHeight - 20;
+    doc.setLineWidth(0.5);
+    doc.setDrawColor(200, 200, 200);
+    doc.line(margin, footerY, pageWidth - margin, footerY);
+  
+    doc.setFontSize(9);
+    doc.setTextColor(100, 100, 100);
+    doc.setFont("helvetica", "normal");
+    doc.text(
+      "Africell Angola | Rua dos Municipios dos Portugueses, Luanda, Angola | apoio.cliente@africell.ao | +244 950 180 123",
+      pageWidth / 2,
+      footerY + 7,
+      { align: "center" }
+    );
+  };
+  
 
   const { rows, typeSummaries } = extractRequiredData()
   const dateRange = rows.length > 0 ? calculateDateRange(rows) : { min: "DD/MM/AAAA", max: "DD/MM/AAAA" }
+
 
 
   return (
@@ -638,10 +705,38 @@ function ExcelPDF() {
           </div>
         </div>
 
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-2">
+            <Label htmlFor="startDate">Data de Início</Label>
+            <Input
+              id="startDate"
+              type="text"
+              placeholder="DD/MM/AAAA, HH:MM"
+              onBlur={(e) => setStartDate(e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="endDate">Data Final</Label>
+            <Input
+              id="endDate"
+              type="text"
+              placeholder="DD/MM/AAAA, HH:MM"
+              onBlur={(e) => setEndDate(e.target.value)}
+            />
+          </div>
+        </div>
+
+
+
         <div className="pt-2 border-t border-slate-100">
           <h3 className="text-md font-medium mb-2">Período de Consumo</h3>
-          <p className="text-sm text-slate-600">{`${dateRange.min} - ${dateRange.max}`}</p>
+          <p className="text-sm text-slate-600">
+            {startDate && endDate
+              ? `${formatDateTime(startDate)} - ${formatDateTime(endDate)}`
+              : `${dateRange.min} - ${dateRange.max}`}
+          </p>
         </div>
+        
 
         <div className="space-y-2 pt-2">
           <Label htmlFor="fileUpload">Upload do ficheiro Excel</Label>
