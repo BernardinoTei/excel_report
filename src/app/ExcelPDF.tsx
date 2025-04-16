@@ -283,11 +283,10 @@ function ExcelPDF() {
             const [datePart, timePart] = str.split(',').map(s => s.trim());
             const [day, month, year] = datePart.split('/').map(Number);
             const [hours, minutes] = timePart.split(':').map(Number);
-            console.log("end");
-            console.log(new Date(year, month - 1, day, hours, minutes));
+   
             return new Date(year, month - 1, day, hours, minutes);
           } catch {
-            console.log("catch");
+   
             return null;
           }
         };
@@ -295,12 +294,6 @@ function ExcelPDF() {
         const start = parseDateTime(startDate);
         const end = parseDateTime(endDate);
         const rowDate = parseDateTime(row.start_time);
-        // const start ="" //parseDateTime(startDate);
-        // const end ="" // parseDateTime(endDate);
-        // const rowDate ="" // parseDateTime(row.start_time);
-        // console.log("strat",startDate);
-        
-        // parseDateTime(startDate);
       
         return start && end && rowDate && rowDate >= start && rowDate <= end;
       }).sort((a:any, b:any) => {
@@ -712,7 +705,17 @@ function ExcelPDF() {
               id="startDate"
               type="text"
               placeholder="DD/MM/AAAA, HH:MM"
-              onBlur={(e) => setStartDate(e.target.value)}
+              onBlur={(e) =>{
+                let value = e.target.value.trim();
+                if (value && !value.includes(',')) {
+                  const parts = value.split(' ');
+                  if (parts.length === 2) {
+                    value = `${parts[0]}, ${parts[1]}`;
+                  }
+                }
+                setStartDate(value);
+                e.target.value = value; // Update the visible input too
+              }}
             />
           </div>
           <div className="space-y-2">
@@ -721,7 +724,17 @@ function ExcelPDF() {
               id="endDate"
               type="text"
               placeholder="DD/MM/AAAA, HH:MM"
-              onBlur={(e) => setEndDate(e.target.value)}
+              onBlur={(e) => {
+                let value = e.target.value.trim();
+                if (value && !value.includes(',')) {
+                  const parts = value.split(' ');
+                  if (parts.length === 2) {
+                    value = `${parts[0]}, ${parts[1]}`;
+                  }
+                }
+                setEndDate(value);
+                e.target.value = value;
+              }}
             />
           </div>
         </div>
