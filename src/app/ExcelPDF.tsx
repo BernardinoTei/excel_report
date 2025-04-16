@@ -215,7 +215,6 @@ function ExcelPDF() {
   const extractRequiredData = () => {
     if (!excelData || excelData.length <= 1)
       return { rows: [], typeSummaries: [] };
-
     // Find column indexes for the required fields
     const headers = excelData[0];
     const startTimeIndex = headers.findIndex(
@@ -241,7 +240,7 @@ function ExcelPDF() {
     );
 
   
-    
+   
 
     // Extract only the rows with the required fields and non-zero amounts
     const extractedRows = excelData
@@ -336,25 +335,36 @@ function ExcelPDF() {
 
 
   // Helper function to format date/time strings for better display
-  const formatDateTime = (dateTimeString: any) => {
-    if (!dateTimeString) return "DD/MM/AAAA, HH:MM";
+  const formatDateTime = (input: any): string => {
+    if (!input) return "DD/MM/AAAA, HH:MM";
   
-    try {
-      const date = new Date(dateTimeString);
-      if (!isNaN(date.getTime())) {
-        const day = date.getDate().toString().padStart(2, '0');
-        const month = (date.getMonth() + 1).toString().padStart(2, '0');
-        const year = date.getFullYear();
-        const hours = date.getHours().toString().padStart(2, '0');
-        const minutes = date.getMinutes().toString().padStart(2, '0');
-        return `${day}/${month}/${year}, ${hours}:${minutes}`;
-      }
-    } catch (e) {
-      console.log(e);
+    // Check if it's a number (could be Excel date serial)
+    if (!isNaN(input) && typeof input === "number") {
+      // Excel's base date is Jan 1, 1900
+      const excelEpoch = new Date(Date.UTC(1899, 11, 30));
+      const date = new Date(excelEpoch.getTime() + input * 86400000); // 86400000 ms/day
+      return formatAsString(date);
     }
   
-    return String(dateTimeString);
+    // Try parsing as a regular date string
+    const parsedDate = new Date(input);
+    if (!isNaN(parsedDate.getTime())) {
+      return formatAsString(parsedDate);
+    }
+  
+    // If all else fails, return the input
+    return String(input);
   };
+  
+  const formatAsString = (date: Date): string => {
+    const day = date.getDate().toString().padStart(2, "0");
+    const month = (date.getMonth() + 1).toString().padStart(2, "0");
+    const year = date.getFullYear();
+    const hours = date.getHours().toString().padStart(2, "0");
+    const minutes = date.getMinutes().toString().padStart(2, "0");
+    return `${day}/${month}/${year}, ${hours}:${minutes}`;
+  };
+  
   
   const parseDateTime = (str: string) => {
     const [datePart, timePart] = str.split(',').map(s => s.trim());
